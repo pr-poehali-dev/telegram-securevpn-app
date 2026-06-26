@@ -4,35 +4,35 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 220 40% 6%;
+    --foreground: 200 30% 96%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 220 35% 10%;
+    --card-foreground: 200 30% 96%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 220 35% 10%;
+    --popover-foreground: 200 30% 96%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 190 100% 50%;
+    --primary-foreground: 220 40% 6%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 30% 16%;
+    --secondary-foreground: 200 30% 96%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 25% 18%;
+    --muted-foreground: 210 15% 65%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 190 100% 50%;
+    --accent-foreground: 220 40% 6%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 200 60% 22%;
+    --input: 220 30% 16%;
+    --ring: 190 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -97,5 +97,86 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: "Golos Text", sans-serif;
+    background-image:
+      radial-gradient(
+        circle at 20% 0%,
+        hsl(190 100% 50% / 0.12),
+        transparent 40%
+      ),
+      radial-gradient(
+        circle at 80% 100%,
+        hsl(220 100% 50% / 0.1),
+        transparent 45%
+      );
+    background-attachment: fixed;
   }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: "Montserrat", sans-serif;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: hsl(220 35% 12% / 0.55);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid hsl(190 100% 50% / 0.18);
+    box-shadow: 0 8px 40px hsl(220 60% 2% / 0.5);
+  }
+  .neon-text {
+    text-shadow: 0 0 18px hsl(190 100% 50% / 0.6);
+  }
+  .neon-border {
+    box-shadow:
+      0 0 0 1px hsl(190 100% 50% / 0.4),
+      0 0 24px hsl(190 100% 50% / 0.3);
+  }
+  .neon-glow {
+    box-shadow: 0 0 30px hsl(190 100% 50% / 0.35);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsl(190 100% 50% / 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 8px hsl(190 100% 50% / 0);
+  }
+}
+.animate-fadeup {
+  animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-pop {
+  animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.animate-livepulse {
+  animation: pulseGlow 2s infinite;
 }
