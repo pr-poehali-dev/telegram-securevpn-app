@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>SecureVPN</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e1a;
+  --bg2: #0f1523;
+  --cyan: #00d4ff;
+  --cyan2: #0099cc;
+  --glass: rgba(255,255,255,0.05);
+  --glass-border: rgba(0,212,255,0.2);
+  --text: #e8f4f8;
+  --muted: #6b8a9a;
+  --card: rgba(15,21,35,0.8);
+  --danger: #ff4757;
+  --success: #00d4aa;
+  --nav-h: 72px;
+  --radius: 18px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Golos Text', sans-serif; overflow-x: hidden; }
+body { background-image: radial-gradient(circle at 15% 0%, rgba(0,212,255,0.12) 0%, transparent 45%), radial-gradient(circle at 85% 100%, rgba(0,80,160,0.1) 0%, transparent 45%); background-attachment: fixed; }
+h1,h2,h3,h4,.display { font-family: 'Montserrat', sans-serif; }
+
+/* ANIMATIONS */
+@keyframes fadeUp { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:translateY(0); } }
+@keyframes popIn { from { opacity:0; transform:scale(0.82); } to { opacity:1; transform:scale(1); } }
+@keyframes pulseGlow { 0%,100% { box-shadow:0 0 0 0 rgba(0,212,255,0.5); } 50% { box-shadow:0 0 0 8px rgba(0,212,255,0); } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes slideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
+@keyframes toastIn { from { transform:translateY(80px) scale(0.9); opacity:0; } to { transform:translateY(0) scale(1); opacity:1; } }
+.fade-up { animation: fadeUp 0.55s cubic-bezier(.22,1,.36,1) both; }
+.pop-in { animation: popIn 0.4s cubic-bezier(.34,1.56,.64,1) both; }
+.fade-in { animation: fadeIn 0.4s ease both; }
+
+/* LAYOUT */
+#app { max-width: 480px; margin: 0 auto; min-height: 100dvh; position: relative; }
+.screen { display: none; }
+.screen.active { display: block; }
+.tab-content { display: none; padding-bottom: calc(var(--nav-h) + 16px); }
+.tab-content.active { display: block; }
+
+/* GLASS CARD */
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}
+
+/* NEON */
+.neon-text { text-shadow: 0 0 20px rgba(0,212,255,0.7); }
+.neon-glow { box-shadow: 0 0 24px rgba(0,212,255,0.35); }
+.neon-border { box-shadow: 0 0 0 1px rgba(0,212,255,0.45), 0 0 24px rgba(0,212,255,0.2); }
+.neon-pulse { animation: pulseGlow 2.5s infinite; }
+
+/* BUTTONS */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 0 20px; height: 48px; border-radius: 14px; border: none; cursor: pointer;
+  font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 14px;
+  transition: all 0.2s; user-select: none; text-decoration: none;
+}
+.btn:active { transform: scale(0.96); }
+.btn-primary { background: var(--cyan); color: #0a0e1a; }
+.btn-primary:hover { background: #1ae0ff; }
+.btn-primary.neon-glow:hover { box-shadow: 0 0 32px rgba(0,212,255,0.5); }
+.btn-outline { background: transparent; border: 1px solid var(--glass-border); color: var(--text); }
+.btn-outline:hover { border-color: var(--cyan); color: var(--cyan); }
+.btn-ghost { background: rgba(0,212,255,0.08); color: var(--cyan); border: 1px solid rgba(0,212,255,0.15); }
+.btn-ghost:hover { background: rgba(0,212,255,0.15); }
+.btn-danger { background: transparent; border: 1px solid rgba(255,71,87,0.4); color: var(--danger); }
+.btn-danger:hover { background: rgba(255,71,87,0.1); }
+.btn-full { width: 100%; }
+.btn-sm { height: 38px; padding: 0 14px; font-size: 13px; border-radius: 10px; }
+
+/* INPUTS */
+.input {
+  width: 100%; height: 48px; border-radius: 14px; border: 1px solid var(--glass-border);
+  background: rgba(255,255,255,0.04); color: var(--text); padding: 0 16px;
+  font-family: 'Golos Text', sans-serif; font-size: 15px; outline: none;
+  transition: border-color 0.2s;
+}
+.input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,212,255,0.12); }
+.input::placeholder { color: var(--muted); }
+
+/* AUTH SCREEN */
+#auth-screen { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.auth-wrap { width: 100%; max-width: 400px; }
+.auth-logo { text-align: center; margin-bottom: 32px; }
+.auth-logo .logo-icon { width: 88px; height: 88px; margin: 0 auto 16px; border-radius: 24px; background: rgba(0,212,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 44px; }
+.auth-logo h1 { font-size: 32px; font-weight: 900; letter-spacing: -0.5px; }
+.auth-logo p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+.auth-tabs { display: flex; gap: 6px; padding: 5px; background: rgba(255,255,255,0.04); border-radius: 14px; margin-bottom: 20px; }
+.auth-tab { flex: 1; padding: 10px; border-radius: 10px; border: none; cursor: pointer; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 14px; color: var(--muted); background: transparent; transition: all 0.2s; }
+.auth-tab.active { background: var(--cyan); color: #0a0e1a; }
+.auth-form { display: flex; flex-direction: column; gap: 12px; }
+.divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; margin: 4px 0; }
+.divider::before, .divider::after { content:''; flex:1; height:1px; background: var(--glass-border); }
+.social-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* MAIN APP */
+#main-screen { min-height: 100dvh; }
+.page-wrap { padding: 0 16px; max-width: 480px; margin: 0 auto; }
+
+/* HEADER */
+.app-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 16px 12px; }
+.app-header .logo { display: flex; align-items: center; gap: 10px; }
+.app-header .logo .icon { width: 44px; height: 44px; border-radius: 14px; background: rgba(0,212,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.app-header .logo h1 { font-size: 20px; font-weight: 900; line-height: 1; }
+.app-header .logo p { font-size: 12px; color: var(--muted); }
+.status-pill { display: flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 50px; font-size: 12px; font-weight: 600; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.online { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+.status-dot.offline { background: var(--muted); }
+
+/* BOTTOM NAV */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: calc(100% - 24px); max-width: 456px;
+  height: var(--nav-h); padding: 8px 8px 12px;
+  display: flex; align-items: stretch; justify-content: space-between; gap: 4px;
+  z-index: 100; border-radius: 22px 22px 0 0;
+  background: rgba(10,14,26,0.9);
+  border-top: 1px solid var(--glass-border);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: none; background: transparent; cursor: pointer; border-radius: 14px; transition: all 0.2s; color: var(--muted); padding: 0; }
+.nav-btn.active { color: var(--cyan); }
+.nav-btn.active .nav-icon { filter: drop-shadow(0 0 6px rgba(0,212,255,0.8)); }
+.nav-icon { font-size: 20px; line-height: 1; }
+.nav-label { font-family: 'Golos Text', sans-serif; font-size: 10px; font-weight: 600; }
+
+/* STAT CARDS */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat-card { padding: 16px 14px; }
+.stat-card .s-icon { font-size: 20px; margin-bottom: 6px; color: var(--cyan); }
+.stat-card .s-val { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 20px; line-height: 1.1; }
+.stat-card .s-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* SUBSCRIPTION CARD */
+.sub-card { padding: 22px; position: relative; overflow: hidden; margin-bottom: 14px; }
+.sub-card .glow-blob { position: absolute; top: -40px; right: -40px; width: 150px; height: 150px; border-radius: 50%; background: rgba(0,212,255,0.15); filter: blur(40px); pointer-events: none; }
+.sub-card .label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
+.sub-card h2 { font-size: 26px; font-weight: 900; }
+.sub-card .badges { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.badge { display: inline-block; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; }
+.badge-active { background: rgba(0,212,255,0.15); color: var(--cyan); }
+.badge-inactive { background: rgba(107,138,154,0.15); color: var(--muted); }
+.badge-expires { font-size: 12px; color: var(--muted); }
+
+/* SERVER LIST */
+.server-list { display: flex; flex-direction: column; gap: 8px; }
+.server-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; border-radius: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+.server-row .sf { display: flex; align-items: center; gap: 12px; }
+.server-row .flag { font-size: 22px; }
+.server-row .sname { font-weight: 600; font-size: 14px; }
+.server-row .ping { font-family: 'Montserrat', sans-serif; font-size: 12px; color: var(--cyan); font-weight: 700; }
+.section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.section-head h3 { font-size: 16px; font-weight: 800; }
+
+/* PLAN CARDS */
+.plan-card { display: flex; align-items: center; justify-content: space-between; padding: 16px; margin-bottom: 10px; cursor: pointer; transition: transform 0.18s, box-shadow 0.18s; }
+.plan-card:active { transform: scale(0.98); }
+.plan-card:hover { transform: scale(1.01); }
+.plan-card .pi { display: flex; align-items: center; gap: 14px; }
+.plan-card .plan-icon { font-size: 28px; }
+.plan-card .plan-name { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 15px; }
+.plan-card .plan-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.plan-card .plan-price { text-align: right; }
+.plan-card .plan-price .price-val { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 16px; color: var(--cyan); }
+.plan-card .plan-price .price-via { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+/* KEY CARDS */
+.key-card { padding: 14px 16px; margin-bottom: 10px; }
+.key-card .key-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.key-card .key-title { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; color: var(--cyan); }
+.key-card .key-body { font-family: monospace; font-size: 11px; color: var(--muted); word-break: break-all; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px 12px; line-height: 1.5; cursor: pointer; transition: color 0.2s; }
+.key-card .key-body:hover { color: var(--text); }
+.key-card .key-toggle { font-size: 11px; color: var(--cyan); cursor: pointer; margin-top: 6px; display: inline-block; }
+
+/* DOWNLOAD */
+.dl-card { display: flex; align-items: center; justify-content: space-between; padding: 16px; margin-bottom: 10px; }
+.dl-card .dl-left { display: flex; align-items: center; gap: 14px; }
+.dl-card .dl-icon { font-size: 28px; width: 44px; text-align: center; }
+.dl-card .dl-name { font-weight: 700; font-size: 15px; }
+.dl-card .dl-sub { font-size: 12px; color: var(--muted); }
+
+/* PROFILE */
+.profile-avatar { width: 84px; height: 84px; border-radius: 22px; background: rgba(0,212,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 42px; margin: 0 auto 12px; cursor: pointer; overflow: hidden; position: relative; }
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.profile-center { text-align: center; }
+.profile-name { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 22px; }
+.profile-id { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.info-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+.info-row .ir-lbl { font-size: 13px; color: var(--muted); }
+.info-row .ir-val { font-weight: 700; font-size: 13px; }
+.ir-val.ok { color: var(--success); }
+.ir-val.used { color: var(--muted); }
+.ref-box { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.ref-text { flex: 1; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px 12px; font-family: monospace; font-size: 12px; color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.history-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.history-item:last-child { border-bottom: none; }
+.history-item .hi-plan { font-weight: 600; font-size: 13px; }
+.history-item .hi-date { font-size: 12px; color: var(--muted); }
+
+/* DEVICES */
+.device-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: 14px; margin-bottom: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+.device-row .dr-left { display: flex; align-items: center; gap: 12px; }
+.device-row .dr-icon { width: 40px; height: 40px; border-radius: 12px; background: rgba(0,212,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.device-row .dr-name { font-weight: 700; font-size: 14px; }
+.device-row .dr-tag { font-size: 10px; color: var(--cyan); margin-top: 2px; }
+.del-btn { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 18px; padding: 4px; border-radius: 8px; transition: color 0.2s; }
+.del-btn:hover { color: var(--danger); }
+
+/* MODAL */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); padding: 20px;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-box { width: 100%; max-width: 360px; padding: 28px 24px; }
+.modal-box h3 { font-size: 22px; font-weight: 900; text-align: center; margin: 12px 0 6px; }
+.modal-box p { font-size: 14px; color: var(--muted); text-align: center; }
+.modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+.modal-actions .btn { flex: 1; }
+.modal-big-icon { text-align: center; font-size: 48px; }
+
+/* TOAST */
+.toast-container { position: fixed; bottom: calc(var(--nav-h) + 12px); left: 50%; transform: translateX(-50%); z-index: 500; width: calc(100% - 32px); max-width: 448px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { padding: 14px 18px; border-radius: 14px; font-weight: 600; font-size: 14px; animation: toastIn 0.35s cubic-bezier(.34,1.56,.64,1) both; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+.toast-success { background: rgba(0,212,170,0.2); border: 1px solid rgba(0,212,170,0.4); color: var(--success); }
+.toast-error { background: rgba(255,71,87,0.2); border: 1px solid rgba(255,71,87,0.4); color: var(--danger); }
+.toast-info { background: rgba(0,212,255,0.15); border: 1px solid rgba(0,212,255,0.35); color: var(--cyan); }
+
+/* SPINNER */
+.spinner { width: 24px; height: 24px; border: 3px solid rgba(0,212,255,0.2); border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+
+/* EMPTY STATE */
+.empty-state { text-align: center; padding: 48px 20px; }
+.empty-state .es-icon { font-size: 52px; margin-bottom: 14px; opacity: 0.5; }
+.empty-state p { color: var(--muted); font-size: 14px; }
+
+/* SECTION SPACER */
+.section { margin-bottom: 20px; }
+.s-title { font-family: 'Montserrat', sans-serif; font-size: 20px; font-weight: 900; margin-bottom: 14px; }
+.sub-section { font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 800; margin-bottom: 10px; color: var(--text); }
+.s-desc { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+
+/* LOCK SCREEN */
+.lock-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; }
+.lock-screen .lock-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.4; }
+.lock-screen p { color: var(--muted); font-size: 15px; line-height: 1.6; }
+
+/* COPY BTN */
+.copy-btn { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2); color: var(--cyan); border-radius: 10px; padding: 6px 10px; cursor: pointer; font-size: 16px; transition: all 0.2s; }
+.copy-btn:hover { background: rgba(0,212,255,0.2); }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.3); border-radius: 4px; }
+
+/* PROGRESS BAR */
+.progress-bar { height: 6px; border-radius: 6px; background: rgba(255,255,255,0.08); overflow: hidden; margin-top: 10px; }
+.progress-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--cyan2), var(--cyan)); transition: width 0.5s; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- AUTH SCREEN -->
+  <div id="auth-screen" class="screen active">
+    <div class="auth-wrap pop-in">
+      <div class="auth-logo">
+        <div class="logo-icon neon-glow neon-pulse">🛡️</div>
+        <h1 class="neon-text">SecureVPN</h1>
+        <p>Защищённый доступ в один клик</p>
+      </div>
+      <div class="glass" style="padding:24px;">
+        <div class="auth-tabs">
+          <button class="auth-tab active" onclick="switchAuthTab('login')">Вход</button>
+          <button class="auth-tab" onclick="switchAuthTab('register')">Регистрация</button>
+        </div>
+        <div class="auth-form">
+          <input id="auth-name" class="input" placeholder="Имя пользователя" autocomplete="username"/>
+          <input id="auth-pass" class="input" type="password" placeholder="Пароль" autocomplete="current-password"/>
+          <input id="auth-pass2" class="input" type="password" placeholder="Повторите пароль" autocomplete="new-password" style="display:none"/>
+          <button class="btn btn-primary btn-full neon-glow" id="auth-submit-btn" onclick="submitAuth()">Войти</button>
+          <div class="divider">или</div>
+          <div class="social-btns">
+            <button class="btn btn-outline" onclick="loginTelegram()">✈️ Telegram</button>
+            <button class="btn btn-outline" onclick="loginGoogle()">G Google</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP SCREEN -->
+  <div id="main-screen" class="screen">
+    <!-- HEADER -->
+    <div class="app-header">
+      <div class="logo">
+        <div class="icon neon-border">🛡️</div>
+        <div>
+          <h1 class="neon-text">SecureVPN</h1>
+          <p id="header-greeting">Привет!</p>
+        </div>
+      </div>
+      <div class="status-pill glass" id="status-pill">
+        <div class="status-dot online" id="status-dot"></div>
+        <span id="status-text">Online</span>
+      </div>
+    </div>
+
+    <!-- TAB CONTENTS -->
+    <div style="padding:0 16px;">
+
+      <!-- HOME TAB -->
+      <div id="tab-home" class="tab-content active fade-up">
+        <div class="sub-card glass">
+          <div class="glow-blob"></div>
+          <div class="label">Текущий тариф</div>
+          <h2 id="home-plan-name" class="neon-text">Нет подписки</h2>
+          <div class="badges">
+            <span class="badge badge-inactive" id="home-status-badge">Не активна</span>
+            <span class="badge-expires" id="home-expires"></span>
+          </div>
+          <div class="progress-bar" id="home-progress-bar" style="display:none">
+            <div class="progress-fill" id="home-progress-fill"></div>
+          </div>
+        </div>
+        <div class="stat-grid" style="margin-bottom:16px;">
+          <div class="stat-card glass fade-up" style="animation-delay:.06s">
+            <div class="s-icon">🖥️</div>
+            <div class="s-val" id="stat-servers">0</div>
+            <div class="s-lbl">Серверов</div>
+          </div>
+          <div class="stat-card glass fade-up" style="animation-delay:.12s">
+            <div class="s-icon">📱</div>
+            <div class="s-val" id="stat-devices">0</div>
+            <div class="s-lbl">Устройств</div>
+          </div>
+          <div class="stat-card glass fade-up" style="animation-delay:.18s">
+            <div class="s-icon">⏱️</div>
+            <div class="s-val" id="stat-days">—</div>
+            <div class="s-lbl">Осталось</div>
+          </div>
+        </div>
+        <div class="glass" style="padding:18px;">
+          <div class="section-head">
+            <h3>Доступные серверы</h3>
+            <span style="color:var(--cyan);font-size:18px;">📡</span>
+          </div>
+          <div class="server-list" id="server-list">
+            <div class="empty-state" style="padding:20px 0;">
+              <div class="es-icon">🔒</div>
+              <p>Оформите подписку, чтобы открыть серверы</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLANS TAB -->
+      <div id="tab-plans" class="tab-content">
+        <div class="s-title fade-up">Тарифы</div>
+        <div id="plans-list" class="fade-up" style="animation-delay:.05s"></div>
+      </div>
+
+      <!-- KEYS TAB -->
+      <div id="tab-keys" class="tab-content">
+        <div class="s-title fade-up">Мои ключи</div>
+        <div id="keys-content" class="fade-up" style="animation-delay:.05s"></div>
+      </div>
+
+      <!-- DOWNLOAD TAB -->
+      <div id="tab-download" class="tab-content">
+        <div class="s-title fade-up">Скачать</div>
+        <div class="s-desc fade-up">Установите HAPP на своё устройство</div>
+        <div id="dl-list" class="fade-up" style="animation-delay:.05s"></div>
+        <div class="glass fade-up" style="padding:22px;text-align:center;margin-top:8px;animation-delay:.15s">
+          <div style="font-size:28px;margin-bottom:10px;">🔗</div>
+          <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:16px;margin-bottom:6px;">Добавить подписку</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">Откройте бота для управления подпиской</div>
+          <button class="btn btn-primary neon-glow btn-full" onclick="openBot()">Открыть @SecureVpnOfficial_bot</button>
+        </div>
+      </div>
+
+      <!-- PROFILE TAB -->
+      <div id="tab-profile" class="tab-content">
+        <div class="section fade-up">
+          <div class="glass" style="padding:24px;">
+            <div class="profile-center">
+              <label for="avatar-input" style="cursor:pointer;">
+                <div class="profile-avatar neon-glow" id="profile-avatar-wrap">👤</div>
+              </label>
+              <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)"/>
+              <div class="profile-name" id="profile-name"></div>
+              <div class="profile-id" id="profile-id"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section fade-up" style="animation-delay:.07s">
+          <div class="sub-section">Статус аккаунта</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="info-row"><span class="ir-lbl">Триал</span><span class="ir-val" id="profile-trial">Доступен</span></div>
+            <div class="info-row"><span class="ir-lbl">Премиум 4д</span><span class="ir-val" id="profile-prem4">Доступен</span></div>
+            <div class="info-row"><span class="ir-lbl">Приглашено</span><span class="ir-val" id="profile-invited">0</span></div>
+          </div>
+        </div>
+
+        <div class="section fade-up" style="animation-delay:.12s">
+          <div class="sub-section">Устройства</div>
+          <div id="devices-counter" style="font-size:13px;color:var(--muted);margin-bottom:10px;"></div>
+          <div id="devices-list"></div>
+          <button class="btn btn-ghost btn-full" style="margin-top:8px;" onclick="addDevice()">＋ Добавить устройство</button>
+        </div>
+
+        <div class="section fade-up" style="animation-delay:.16s">
+          <div class="sub-section">История подписок</div>
+          <div class="glass" style="padding:16px;" id="history-block">
+            <p style="color:var(--muted);font-size:13px;text-align:center;">Нет истории</p>
+          </div>
+        </div>
+
+        <div class="section fade-up" style="animation-delay:.2s">
+          <div class="sub-section">Реферальная ссылка</div>
+          <div class="glass" style="padding:16px;">
+            <div class="ref-box">
+              <div class="ref-text" id="ref-link"></div>
+              <button class="copy-btn" onclick="copyRef()">📋</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section fade-up" style="animation-delay:.24s;display:flex;flex-direction:column;gap:10px;">
+          <button class="btn btn-outline btn-full" onclick="logout()">🚪 Выйти</button>
+          <button class="btn btn-danger btn-full" onclick="showDeleteConfirm()">🗑️ Удалить аккаунт</button>
+        </div>
+      </div>
+
+    </div><!-- /padding wrap -->
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" id="nav-home" onclick="switchTab('home')">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Главная</span>
+      </button>
+      <button class="nav-btn" id="nav-plans" onclick="switchTab('plans')">
+        <span class="nav-icon">✦</span>
+        <span class="nav-label">Тарифы</span>
+      </button>
+      <button class="nav-btn" id="nav-keys" onclick="switchTab('keys')">
+        <span class="nav-icon">🔑</span>
+        <span class="nav-label">Ключи</span>
+      </button>
+      <button class="nav-btn" id="nav-download" onclick="switchTab('download')">
+        <span class="nav-icon">⬇️</span>
+        <span class="nav-label">Скачать</span>
+      </button>
+      <button class="nav-btn" id="nav-profile" onclick="switchTab('profile')">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">Профиль</span>
+      </button>
+    </nav>
+  </div><!-- /main-screen -->
+
+</div><!-- /app -->
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-plan" onclick="closeModal('modal-plan')">
+  <div class="modal-box glass pop-in" onclick="event.stopPropagation()">
+    <div class="modal-big-icon" id="modal-plan-icon"></div>
+    <h3 id="modal-plan-title"></h3>
+    <p id="modal-plan-desc"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-plan')">Отмена</button>
+      <button class="btn btn-primary neon-glow" id="modal-plan-confirm">Активировать</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-delete" onclick="closeModal('modal-delete')">
+  <div class="modal-box glass pop-in" onclick="event.stopPropagation()">
+    <div class="modal-big-icon">⚠️</div>
+    <h3>Удалить аккаунт?</h3>
+    <p>Все данные, ключи и подписка будут удалены безвозвратно.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-delete')">Отмена</button>
+      <button class="btn btn-danger" onclick="deleteAccount()">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ============================================================
+// CONSTANTS
+// ============================================================
+const GIST_TRIAL = 'https://gist.githubusercontent.com/securevpn108-bot/44ed10a2807f6133217ad043246653e8/raw/c6fd74092b1cdc0c96b64daf5c53d4d99c825fc3/gistfile1.txt';
+const GIST_FULL  = 'https://gist.githubusercontent.com/securevpn108-bot/e44e70d388ef1c41b041f61ed42a07bc/raw/6739b118832d22209c7a5b13bc2fa9770214699c/gistfile1.txt';
+const BOT_URL = 'https://t.me/SecureVpnOfficial_bot';
+
+const PLANS = [
+  { id:'trial',  icon:'🎁', name:'Триал',       days:3,   servers:3, maxDev:2, price:0,   via:'app',  gist:GIST_TRIAL, keys:3 },
+  { id:'prem4',  icon:'🎁', name:'Премиум 4д',  days:4,   servers:7, maxDev:4, price:0,   via:'app',  gist:GIST_FULL,  keys:7 },
+  { id:'m1',     icon:'💎', name:'1 месяц',     days:30,  servers:7, maxDev:4, price:15,  via:'bot',  gist:GIST_FULL,  keys:7 },
+  { id:'m3',     icon:'💎', name:'3 месяца',    days:90,  servers:7, maxDev:4, price:25,  via:'bot',  gist:GIST_FULL,  keys:7 },
+  { id:'m6',     icon:'💎', name:'6 месяцев',   days:180, servers:7, maxDev:4, price:100, via:'bot',  gist:GIST_FULL,  keys:7 },
+  { id:'m12',    icon:'💎', name:'12 месяцев',  days:365, servers:7, maxDev:4, price:300, via:'bot',  gist:GIST_FULL,  keys:7 },
+];
+
+const SERVERS = [
+  {flag:'🇳🇱',name:'Нидерланды',ping:24},
+  {flag:'🇩🇪',name:'Германия',ping:31},
+  {flag:'🇫🇮',name:'Финляндия',ping:18},
+  {flag:'🇺🇸',name:'США',ping:92},
+  {flag:'🇸🇬',name:'Сингапур',ping:110},
+  {flag:'🇫🇷',name:'Франция',ping:38},
+  {flag:'🇬🇧',name:'Британия',ping:44},
+];
+
+const DL_APPS = [
+  {icon:'📱',name:'iOS',sub:'iPhone / iPad',store:'App Store'},
+  {icon:'🤖',name:'Android',sub:'Смартфон / Планшет',store:'Google Play / APK'},
+  {icon:'🪟',name:'Windows',sub:'Windows 10/11',store:'Скачать .exe'},
+  {icon:'🍎',name:'macOS',sub:'macOS 12+',store:'Скачать .dmg'},
+  {icon:'🐧',name:'Linux',sub:'Ubuntu / Debian',store:'Скачать .deb'},
+];
+
+// ============================================================
+// TELEGRAM INIT
+// ============================================================
+const tg = window.Telegram?.WebApp;
+if (tg) { try { tg.ready(); tg.expand(); } catch(e){} }
+
+// ============================================================
+// STATE
+// ============================================================
+let currentUser = null;
+let autoRefreshTimer = null;
+
+// ============================================================
+// STORAGE HELPERS
+// ============================================================
+function saveUser(u) {
+  localStorage.setItem('svpn_session', JSON.stringify(u));
+  localStorage.setItem('svpn_user_' + u.name.toLowerCase(), JSON.stringify(u));
+  currentUser = u;
+}
+
+function loadUser() {
+  const s = localStorage.getItem('svpn_session');
+  return s ? JSON.parse(s) : null;
+}
+
+function makeUser(name, provider, password) {
+  return { name, password: password||null, avatar:null, provider, trialUsed:false, prem4Used:false, invited:0, devices:[], history:[], sub:null };
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, type='info') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.style.opacity='0', 2700);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+let authMode = 'login';
+
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&mode==='login')||(i===1&&mode==='register')));
+  const p2 = document.getElementById('auth-pass2');
+  p2.style.display = mode === 'register' ? 'block' : 'none';
+  document.getElementById('auth-submit-btn').textContent = mode === 'login' ? 'Войти' : 'Создать аккаунт';
+}
+
+function vibrate() { try { navigator.vibrate && navigator.vibrate(60); } catch(e){} }
+
+function submitAuth() {
+  const name = document.getElementById('auth-name').value.trim();
+  const pass = document.getElementById('auth-pass').value;
+  const pass2 = document.getElementById('auth-pass2').value;
+  if (!name || !pass) { vibrate(); showToast('Заполните все поля', 'error'); return; }
+  const key = 'svpn_user_' + name.toLowerCase();
+  if (authMode === 'register') {
+    if (pass !== pass2) { vibrate(); showToast('Пароли не совпадают', 'error'); return; }
+    if (localStorage.getItem(key)) { vibrate(); showToast('Пользователь уже существует', 'error'); return; }
+    const u = makeUser(name, 'local', pass);
+    saveUser(u);
+    showToast('Аккаунт создан!', 'success');
+    enterApp(u);
+  } else {
+    const raw = localStorage.getItem(key);
+    if (!raw) { vibrate(); showToast('Пользователь не найден', 'error'); return; }
+    const u = JSON.parse(raw);
+    if (u.password !== pass) { vibrate(); showToast('Неверный пароль', 'error'); return; }
+    showToast('С возвращением!', 'success');
+    enterApp(u);
+  }
+}
+
+function loginTelegram() {
+  let name = 'TelegramUser_' + Math.floor(Math.random()*9000+1000);
+  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    const tu = tg.initDataUnsafe.user;
+    name = tu.username || (tu.first_name + (tu.last_name?' '+tu.last_name:'')) || name;
+  }
+  const key = 'svpn_user_' + name.toLowerCase();
+  const existing = localStorage.getItem(key);
+  const u = existing ? JSON.parse(existing) : makeUser(name, 'telegram');
+  saveUser(u);
+  showToast('Вход через Telegram', 'success');
+  enterApp(u);
+}
+
+function loginGoogle() {
+  const name = 'GoogleUser_' + Math.floor(Math.random()*9000+1000);
+  const u = makeUser(name, 'google');
+  saveUser(u);
+  showToast('Вход через Google', 'success');
+  enterApp(u);
+}
+
+// ============================================================
+// APP ENTRY
+// ============================================================
+function enterApp(u) {
+  currentUser = u;
+  document.getElementById('auth-screen').classList.remove('active');
+  document.getElementById('main-screen').classList.add('active');
+  renderAll();
+  startAutoRefresh();
+}
+
+function startAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = setInterval(() => { if (currentUser) renderHome(); }, 3000);
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderAll() {
+  renderHeader();
+  renderHome();
+  renderPlans();
+  renderKeys();
+  renderDownload();
+  renderProfile();
+}
+
+function isActive() { return currentUser.sub && currentUser.sub.expires > Date.now(); }
+function daysLeft() { if (!currentUser.sub) return 0; return Math.max(0, Math.ceil((currentUser.sub.expires - Date.now()) / 86400000)); }
+function fmtDate(ts) { return new Date(ts).toLocaleDateString('ru-RU', {day:'numeric',month:'long',year:'numeric'}); }
+
+function hashId(name) { let h=0; for(let c of name){h=(h*137+c.charCodeAt(0))%9999999;} return String(Math.abs(h)).padStart(7,'0'); }
+
+function renderHeader() {
+  document.getElementById('header-greeting').textContent = 'Привет, ' + currentUser.name;
+  const active = isActive();
+  document.getElementById('status-dot').className = 'status-dot ' + (active ? 'online' : 'offline');
+  document.getElementById('status-text').textContent = active ? 'Online' : 'Offline';
+}
+
+function renderHome() {
+  const sub = currentUser.sub;
+  const active = isActive();
+  document.getElementById('home-plan-name').textContent = active ? sub.name : 'Нет подписки';
+  const badge = document.getElementById('home-status-badge');
+  badge.textContent = active ? 'Активна' : 'Не активна';
+  badge.className = 'badge ' + (active ? 'badge-active' : 'badge-inactive');
+  const exp = document.getElementById('home-expires');
+  exp.textContent = active ? 'истекает ' + fmtDate(sub.expires) : '';
+  document.getElementById('stat-servers').textContent = active ? sub.servers : '0';
+  document.getElementById('stat-devices').textContent = active ? sub.maxDev : '0';
+  document.getElementById('stat-days').textContent = active ? daysLeft() + ' дн' : '—';
+
+  const pb = document.getElementById('home-progress-bar');
+  if (active) {
+    pb.style.display = 'block';
+    const plan = PLANS.find(p=>p.id===sub.planId);
+    if (plan) {
+      const total = plan.days * 86400000;
+      const passed = Date.now() - (sub.expires - total);
+      const pct = Math.max(2, Math.min(100, (passed/total)*100));
+      document.getElementById('home-progress-fill').style.width = pct+'%';
+    }
+  } else { pb.style.display = 'none'; }
+
+  const sl = document.getElementById('server-list');
+  if (!active) {
+    sl.innerHTML = '<div class="empty-state" style="padding:20px 0;"><div class="es-icon">🔒</div><p>Оформите подписку, чтобы открыть серверы</p></div>';
+    return;
+  }
+  sl.innerHTML = SERVERS.slice(0, sub.servers).map(s => `
+    <div class="server-row">
+      <div class="sf"><span class="flag">${s.flag}</span><span class="sname">${s.name}</span></div>
+      <span class="ping">${s.ping} ms</span>
+    </div>`).join('');
+}
+
+function renderPlans() {
+  document.getElementById('plans-list').innerHTML = PLANS.map((p,i) => `
+    <div class="plan-card glass ${p.accent?'neon-border':''}" onclick="onPlanClick('${p.id}')" style="animation-delay:${i*60}ms;">
+      <div class="pi">
+        <span class="plan-icon">${p.icon}</span>
+        <div>
+          <div class="plan-name">${p.name}</div>
+          <div class="plan-desc">${p.days} дней · ${p.servers} серверов · ${p.maxDev} устр.</div>
+        </div>
+      </div>
+      <div class="plan-price">
+        <div class="price-val">${p.price===0?'FREE':p.price+'⭐'}</div>
+        <div class="price-via">${p.via==='app'?'в приложении':'через бота'}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderKeys() {
+  const kc = document.getElementById('keys-content');
+  if (!isActive()) {
+    kc.innerHTML = '<div class="lock-screen"><div class="lock-icon">🔒</div><p>Ключи доступны только при активной подписке</p></div>';
+    return;
+  }
+  const keys = currentUser.sub.keys || [];
+  if (!keys.length) {
+    kc.innerHTML = '<div class="lock-screen"><div class="lock-icon">🔑</div><p>Ключи не найдены. Переактивируйте подписку.</p></div>';
+    return;
+  }
+  kc.innerHTML = `
+    <button class="btn btn-primary neon-glow btn-full" style="margin-bottom:14px;" onclick="copyAllKeys()">📋 Копировать все ключи</button>
+    ${keys.map((k,i) => {
+      const srv = SERVERS[i] || {flag:'🌐',name:'Сервер'};
+      const short = k.length>50 ? k.slice(0,50)+'…' : k;
+      return `<div class="key-card glass">
+        <div class="key-head">
+          <div class="key-title"><span>${srv.flag}</span> Ключ #${i+1} — ${srv.name}</div>
+          <button class="copy-btn" onclick="copyKey('${btoa(k)}')">📋</button>
+        </div>
+        <div class="key-body" id="key-body-${i}" onclick="toggleKey(${i})">${escHtml(short)}</div>
+        ${k.length>50?`<span class="key-toggle" onclick="toggleKey(${i})" id="key-toggle-${i}">Показать полностью</span>`:''}
+      </div>`;
+    }).join('')}`;
+  // store full keys for toggle
+  keys.forEach((k,i) => { window['_key_'+i] = k; });
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function toggleKey(i) {
+  const body = document.getElementById('key-body-'+i);
+  const toggle = document.getElementById('key-toggle-'+i);
+  const full = window['_key_'+i] || '';
+  if (!body || !toggle) return;
+  if (body.dataset.expanded === '1') {
+    const short = full.length>50 ? full.slice(0,50)+'…' : full;
+    body.textContent = short;
+    toggle.textContent = 'Показать полностью';
+    body.dataset.expanded = '0';
+  } else {
+    body.textContent = full;
+    toggle.textContent = 'Скрыть';
+    body.dataset.expanded = '1';
+  }
+}
+
+function copyKey(b64) {
+  const k = atob(b64);
+  navigator.clipboard.writeText(k).then(() => showToast('Ключ скопирован', 'success')).catch(() => showToast('Ошибка копирования', 'error'));
+}
+
+function copyAllKeys() {
+  const keys = currentUser.sub?.keys || [];
+  navigator.clipboard.writeText(keys.join('\n')).then(() => showToast('Все ключи скопированы', 'success')).catch(() => showToast('Ошибка копирования', 'error'));
+}
+
+function renderDownload() {
+  document.getElementById('dl-list').innerHTML = DL_APPS.map((d,i) => `
+    <div class="dl-card glass" style="animation-delay:${i*60}ms;">
+      <div class="dl-left">
+        <div class="dl-icon">${d.icon}</div>
+        <div><div class="dl-name">${d.name}</div><div class="dl-sub">${d.sub}</div></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="openBot()">Скачать</button>
+    </div>`).join('');
+}
+
+function renderProfile() {
+  const u = currentUser;
+  // avatar
+  const aw = document.getElementById('profile-avatar-wrap');
+  aw.innerHTML = u.avatar ? `<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:22px;">` : '👤';
+  document.getElementById('profile-name').textContent = u.name;
+  document.getElementById('profile-id').textContent = 'ID: #' + hashId(u.name);
+  // status
+  const ti = document.getElementById('profile-trial');
+  ti.textContent = u.trialUsed ? 'Использован' : 'Доступен';
+  ti.className = 'ir-val ' + (u.trialUsed ? 'used' : 'ok');
+  const pi = document.getElementById('profile-prem4');
+  pi.textContent = u.prem4Used ? 'Использован' : 'Доступен';
+  pi.className = 'ir-val ' + (u.prem4Used ? 'used' : 'ok');
+  document.getElementById('profile-invited').textContent = u.invited || 0;
+  // devices
+  renderDevices();
+  // history
+  const hb = document.getElementById('history-block');
+  if (!u.history || !u.history.length) {
+    hb.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;">Нет истории</p>';
+  } else {
+    hb.innerHTML = u.history.slice().reverse().map(h => `
+      <div class="history-item"><span class="hi-plan">${h.plan}</span><span class="hi-date">${h.date}</span></div>`).join('');
+  }
+  // ref link
+  document.getElementById('ref-link').textContent = 'https://t.me/SecureVpnOfficial_bot?start=' + encodeURIComponent(u.name);
+}
+
+function renderDevices() {
+  const u = currentUser;
+  const active = isActive();
+  const max = active ? currentUser.sub.maxDev : 2;
+  const devs = u.devices || [];
+  document.getElementById('devices-counter').textContent = `${devs.length} из ${max} устройств`;
+  const dl = document.getElementById('devices-list');
+  if (!devs.length) {
+    dl.innerHTML = '<p style="color:var(--muted);font-size:13px;margin-bottom:8px;">Нет добавленных устройств</p>';
+    return;
+  }
+  dl.innerHTML = devs.map((d,i) => `
+    <div class="device-row">
+      <div class="dr-left">
+        <div class="dr-icon">${d.icon}</div>
+        <div><div class="dr-name">${d.name}</div>${d.current?'<div class="dr-tag">Текущее устройство</div>':''}</div>
+      </div>
+      <button class="del-btn" onclick="removeDevice(${i})">🗑️</button>
+    </div>`).join('');
+}
+
+function detectDevice() {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/.test(ua)) return {icon:'📱',name:'iPhone'};
+  if (/Android/.test(ua)) return {icon:'📱',name:'Android'};
+  if (/Mac/.test(ua)) return {icon:'💻',name:'MacBook'};
+  return {icon:'🖥️',name:'Компьютер'};
+}
+
+function addDevice() {
+  const active = isActive();
+  const max = active ? currentUser.sub.maxDev : 2;
+  const devs = currentUser.devices || [];
+  if (devs.length >= max) { vibrate(); showToast(`Лимит ${max} устройства для этого тарифа`, 'error'); return; }
+  const det = detectDevice();
+  const hasCurrent = devs.some(d=>d.current);
+  const nd = { id: Date.now(), icon: det.icon, name: det.name, current: !hasCurrent };
+  currentUser.devices = [...devs, nd];
+  saveUser(currentUser);
+  renderDevices();
+  showToast('Устройство добавлено', 'success');
+}
+
+function removeDevice(idx) {
+  const devs = currentUser.devices || [];
+  devs.splice(idx, 1);
+  currentUser.devices = devs;
+  saveUser(currentUser);
+  renderDevices();
+  showToast('Устройство удалено', 'info');
+}
+
+// ============================================================
+// PLANS LOGIC
+// ============================================================
+let pendingPlanId = null;
+
+function onPlanClick(planId) {
+  const plan = PLANS.find(p => p.id === planId);
+  if (!plan) return;
+  if (plan.via === 'bot') {
+    try { if (tg) tg.openTelegramLink(BOT_URL); } catch(e){}
+    window.open(BOT_URL, '_blank');
+    showToast('Открываем @SecureVpnOfficial_bot', 'info');
+    return;
+  }
+  if (planId === 'trial' && currentUser.trialUsed) { vibrate(); showToast('Триал уже использован', 'error'); return; }
+  if (planId === 'prem4' && currentUser.prem4Used) { vibrate(); showToast('Премиум 4д уже использован', 'error'); return; }
+  pendingPlanId = planId;
+  document.getElementById('modal-plan-icon').textContent = plan.icon;
+  document.getElementById('modal-plan-title').textContent = 'Активировать ' + plan.name + '?';
+  document.getElementById('modal-plan-desc').textContent = plan.days + ' дней · ' + plan.servers + ' серверов · ' + plan.keys + ' ключей';
+  document.getElementById('modal-plan-confirm').onclick = () => activatePlan(planId);
+  openModal('modal-plan');
+}
+
+async function activatePlan(planId) {
+  const plan = PLANS.find(p => p.id === planId);
+  if (!plan) return;
+  closeModal('modal-plan');
+  const btn = document.getElementById('modal-plan-confirm');
+  if (btn) btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;"></div>';
+  showToast('Загрузка ключей…', 'info');
+  try {
+    const res = await fetch(plan.gist);
+    if (!res.ok) throw new Error('fetch failed');
+    const text = await res.text();
+    const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+    const keys = lines.slice(0, plan.keys);
+    if (!keys.length) throw new Error('empty');
+    const sub = {
+      planId: plan.id, name: plan.name, servers: plan.servers, maxDev: plan.maxDev,
+      expires: Date.now() + plan.days * 86400000, keys,
+    };
+    currentUser.sub = sub;
+    currentUser.history = [...(currentUser.history||[]), { plan: plan.name, date: fmtDate(Date.now()) }];
+    if (planId === 'trial') currentUser.trialUsed = true;
+    if (planId === 'prem4') currentUser.prem4Used = true;
+    saveUser(currentUser);
+    try { if (tg) tg.sendData(JSON.stringify({action:'activate_free',plan:planId})); } catch(e){}
+    showToast(plan.name + ' активирован! Ключей: ' + keys.length, 'success');
+    renderAll();
+    switchTab('keys');
+  } catch(e) {
+    vibrate();
+    showToast('Не удалось загрузить ключи. Попробуйте ещё раз.', 'error');
+  }
+}
+
+// ============================================================
+// MODAL HELPERS
+// ============================================================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function showDeleteConfirm() { openModal('modal-delete'); }
+
+function deleteAccount() {
+  closeModal('modal-delete');
+  localStorage.removeItem('svpn_user_' + currentUser.name.toLowerCase());
+  localStorage.removeItem('svpn_session');
+  currentUser = null;
+  document.getElementById('main-screen').classList.remove('active');
+  document.getElementById('auth-screen').classList.add('active');
+  showToast('Аккаунт удалён', 'info');
+}
+
+// ============================================================
+// NAV / TABS
+// ============================================================
+let currentTab = 'home';
+
+function switchTab(tab) {
+  document.getElementById('tab-'+currentTab).classList.remove('active');
+  document.getElementById('nav-'+currentTab).classList.remove('active');
+  currentTab = tab;
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('nav-'+tab).classList.add('active');
+  // re-render dynamic tabs
+  if (tab==='home') renderHome();
+  if (tab==='keys') renderKeys();
+  if (tab==='profile') renderProfile();
+}
+
+// ============================================================
+// PROFILE ACTIONS
+// ============================================================
+function uploadAvatar(input) {
+  const f = input.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    currentUser.avatar = reader.result;
+    saveUser(currentUser);
+    renderProfile();
+    showToast('Аватар обновлён', 'success');
+  };
+  reader.readAsDataURL(f);
+}
+
+function copyRef() {
+  const ref = 'https://t.me/SecureVpnOfficial_bot?start=' + encodeURIComponent(currentUser.name);
+  navigator.clipboard.writeText(ref).then(() => showToast('Ссылка скопирована', 'success')).catch(()=>{});
+}
+
+function logout() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  localStorage.removeItem('svpn_session');
+  currentUser = null;
+  document.getElementById('main-screen').classList.remove('active');
+  document.getElementById('auth-screen').classList.add('active');
+  switchTab('home');
+  showToast('Вы вышли из аккаунта', 'info');
+}
+
+function openBot() {
+  try { if (tg) tg.openTelegramLink(BOT_URL); } catch(e){}
+  window.open(BOT_URL, '_blank');
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+(function init() {
+  // try auto-login
+  const saved = localStorage.getItem('svpn_session');
+  if (saved) {
+    try {
+      const u = JSON.parse(saved);
+      enterApp(u);
+      return;
+    } catch(e) {}
+  }
+  // try Telegram auto-login
+  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    const tu = tg.initDataUnsafe.user;
+    const name = tu.username || (tu.first_name + (tu.last_name?' '+tu.last_name:'')) || 'TGUser';
+    const key = 'svpn_user_' + name.toLowerCase();
+    const existing = localStorage.getItem(key);
+    const u = existing ? JSON.parse(existing) : makeUser(name, 'telegram');
+    saveUser(u);
+    enterApp(u);
+  }
+})();
+
+// keyboard enter submit
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('auth-screen').classList.contains('active')) submitAuth();
+});
+</script>
+</body>
+</html>
